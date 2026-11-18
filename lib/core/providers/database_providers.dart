@@ -37,7 +37,8 @@ final clockProvider = Provider<AppClock>((ref) {
 /// Task repository provider.
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final appDb = ref.watch(databaseProvider);
-  final repo = SqliteTaskRepository(appDb.db);
+  final clock = ref.watch(clockProvider);
+  final repo = SqliteTaskRepository(appDb.db, clock);
   ref.onDispose(repo.dispose);
   return repo;
 });
@@ -63,7 +64,8 @@ final focusSessionRepositoryProvider = Provider<FocusSessionRepository>((ref) {
 /// Day confirmation repository provider.
 final dayConfirmationRepositoryProvider = Provider<DayConfirmationRepository>((ref) {
   final appDb = ref.watch(databaseProvider);
-  return SqliteDayConfirmationRepository(appDb.db);
+  final clock = ref.watch(clockProvider);
+  return SqliteDayConfirmationRepository(appDb.db, clock);
 });
 
 /// Reschedule repository provider.

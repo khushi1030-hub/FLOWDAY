@@ -1,12 +1,14 @@
 import 'package:sqflite/sqflite.dart';
+import '../../../../core/time/app_clock.dart';
 import '../../domain/entities/day_confirmation.dart';
 import '../../domain/repositories/day_confirmation_repository.dart';
 
 /// SQLite implementation of [DayConfirmationRepository].
 class SqliteDayConfirmationRepository implements DayConfirmationRepository {
-  const SqliteDayConfirmationRepository(this._db);
+  SqliteDayConfirmationRepository(this._db, [AppClock? clock]) : _clock = clock ?? const SystemClock();
 
   final Database _db;
+  final AppClock _clock;
 
   @override
   Future<DayConfirmation?> getConfirmation(String dateKey) async {
@@ -27,7 +29,7 @@ class SqliteDayConfirmationRepository implements DayConfirmationRepository {
       {
         'date_key': dateKey,
         'confirmed': confirmed ? 1 : 0,
-        'confirmed_at': confirmedAt ?? (confirmed ? DateTime.now().millisecondsSinceEpoch : null),
+        'confirmed_at': confirmedAt ?? (confirmed ? _clock.now().millisecondsSinceEpoch : null),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );

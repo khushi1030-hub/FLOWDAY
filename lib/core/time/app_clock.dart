@@ -27,13 +27,13 @@ class SystemClock implements AppClock {
 
   @override
   int get currentMinutesSinceMidnight {
-    final current = DateTime.now();
+    final current = now();
     return current.hour * 60 + current.minute;
   }
 
   @override
   String get currentDateKey {
-    final current = DateTime.now();
+    final current = now();
     final y = current.year.toString().padLeft(4, '0');
     final m = current.month.toString().padLeft(2, '0');
     final d = current.day.toString().padLeft(2, '0');

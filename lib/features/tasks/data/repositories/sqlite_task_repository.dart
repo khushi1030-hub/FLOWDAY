@@ -1,14 +1,20 @@
 import 'dart:async';
 import 'package:sqflite/sqflite.dart';
+import '../../../../core/time/app_clock.dart';
 import '../../domain/entities/task.dart';
+import '../../domain/entities/task_event.dart';
 import '../../domain/repositories/task_repository.dart';
 
-/// SQLite implementation of [TaskRepository] with reactive stream notifications.
+/// SQLite implementation of [TaskRepository] with reactive stream notifications and event logging.
 class SqliteTaskRepository implements TaskRepository {
-  SqliteTaskRepository(this._db);
+  SqliteTaskRepository(this._db, [AppClock? clock]) : _clock = clock ?? const SystemClock();
 
   final Database _db;
+  final AppClock _clock;
   final _changeController = StreamController<String>.broadcast();
+
+  /// Hook for Phase 7 notification scheduler to cancel reminders/alarms on task deletion.
+  Future<void> Function(String taskId)? onTaskDeleted;
 
   void _notifyDate(String dateKey) {
     if (!_changeController.isClosed) {
@@ -41,10 +47,7 @@ class SqliteTaskRepository implements TaskRepository {
 
   @override
   Stream<List<Task>> watchTasksForDate(String dateKey) async* {
-    // Yield immediate state
     yield await getTasksForDate(dateKey);
-
-    // Yield upon every relevant database modification
     await for (final changedDate in _changeController.stream) {
       if (changedDate == dateKey || changedDate == 'ALL') {
         yield await getTasksForDate(dateKey);
@@ -60,34 +63,73 @@ class SqliteTaskRepository implements TaskRepository {
 
   @override
   Future<void> insertTask(Task task) async {
-    await _db.insert(
-      'tasks',
-      task.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final nowMs = _clock.now().millisecondsSinceEpoch;
+    await _db.transaction((txn) async {
+      await txn.insert(
+        'tasks',
+        task.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      final event = TaskEvent(
+        taskId: task.id,
+        taskTitle: task.title,
+        dateKey: task.dateKey,
+        eventType: 'created',
+        plannedMinutes: task.durationMin,
+        actualMinutes: 0,
+        occurredAt: nowMs,
+      );
+      await txn.insert('task_events', event.toMap());
+    });
     _notifyDate(task.dateKey);
   }
 
   @override
   Future<void> updateTask(Task task) async {
-    await _db.update(
-      'tasks',
-      task.toMap(),
-      where: 'id = ?',
-      whereArgs: [task.id],
-    );
+    final nowMs = _clock.now().millisecondsSinceEpoch;
+    await _db.transaction((txn) async {
+      await txn.update(
+        'tasks',
+        task.toMap(),
+        where: 'id = ?',
+        whereArgs: [task.id],
+      );
+      final event = TaskEvent(
+        taskId: task.id,
+        taskTitle: task.title,
+        dateKey: task.dateKey,
+        eventType: 'edited',
+        plannedMinutes: task.durationMin,
+        actualMinutes: 0,
+        occurredAt: nowMs,
+      );
+      await txn.insert('task_events', event.toMap());
+    });
     _notifyDate(task.dateKey);
   }
 
   @override
   Future<void> deleteTask(String id) async {
     final task = await getTaskById(id);
-    await _db.delete('tasks', where: 'id = ?', whereArgs: [id]);
-    if (task != null) {
-      _notifyDate(task.dateKey);
-    } else {
-      _notifyDate('ALL');
-    }
+    if (task == null) return;
+
+    final nowMs = _clock.now().millisecondsSinceEpoch;
+    await _db.transaction((txn) async {
+      await txn.delete('tasks', where: 'id = ?', whereArgs: [id]);
+      final event = TaskEvent(
+        taskId: task.id,
+        taskTitle: task.title,
+        dateKey: task.dateKey,
+        eventType: 'deleted',
+        plannedMinutes: task.durationMin,
+        actualMinutes: 0,
+        occurredAt: nowMs,
+      );
+      await txn.insert('task_events', event.toMap());
+    });
+    // Trigger future reminders cancellation hook (for Phase 7)
+    await onTaskDeleted?.call(id);
+    _notifyDate(task.dateKey);
   }
 
   @override
@@ -95,16 +137,37 @@ class SqliteTaskRepository implements TaskRepository {
     final task = await getTaskById(id);
     if (task == null) return;
 
-    await _db.update(
-      'tasks',
-      {
-        'status': 'completed',
-        'completed_at': completedAt,
-        'updated_at': completedAt,
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    await _db.transaction((txn) async {
+      await txn.update(
+        'tasks',
+        {
+          'status': 'completed',
+          'completed_at': completedAt,
+          'updated_at': completedAt,
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // Remove any existing completed event for this task so exactly one remains
+      await txn.delete(
+        'task_events',
+        where: 'task_id = ? AND event_type = ?',
+        whereArgs: [id, 'completed'],
+      );
+
+      final event = TaskEvent(
+        taskId: task.id,
+        taskTitle: task.title,
+        dateKey: task.dateKey,
+        eventType: 'completed',
+        plannedMinutes: task.durationMin,
+        actualMinutes: task.durationMin,
+        occurredAt: completedAt,
+      );
+      await txn.insert('task_events', event.toMap());
+    });
+
     _notifyDate(task.dateKey);
   }
 
@@ -113,17 +176,38 @@ class SqliteTaskRepository implements TaskRepository {
     final task = await getTaskById(id);
     if (task == null) return;
 
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    await _db.update(
-      'tasks',
-      {
-        'status': 'incomplete',
-        'completed_at': null,
-        'updated_at': nowMs,
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    final nowMs = _clock.now().millisecondsSinceEpoch;
+    await _db.transaction((txn) async {
+      await txn.update(
+        'tasks',
+        {
+          'status': 'incomplete',
+          'completed_at': null,
+          'updated_at': nowMs,
+        },
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // Un-completing via swipe left clears any stale 'completed' history row
+      await txn.delete(
+        'task_events',
+        where: 'task_id = ? AND event_type = ?',
+        whereArgs: [id, 'completed'],
+      );
+
+      final event = TaskEvent(
+        taskId: task.id,
+        taskTitle: task.title,
+        dateKey: task.dateKey,
+        eventType: 'marked_incomplete',
+        plannedMinutes: task.durationMin,
+        actualMinutes: 0,
+        occurredAt: nowMs,
+      );
+      await txn.insert('task_events', event.toMap());
+    });
+
     _notifyDate(task.dateKey);
   }
 

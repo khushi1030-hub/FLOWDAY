@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/providers/database_providers.dart';
@@ -6,8 +7,8 @@ import '../../core/theme/flow_colors.dart';
 import '../../core/theme/flow_typography.dart';
 import '../../core/widgets/flow_buttons.dart';
 import '../../core/widgets/flow_card.dart';
-import '../../core/widgets/flow_chips.dart';
 import '../../features/tasks/domain/entities/task.dart';
+import '../tasks/presentation/widgets/swipeable_task_card.dart';
 
 /// Temporary database debug screen for Phase 2 persistence verification.
 class DatabaseDebugScreen extends ConsumerStatefulWidget {
@@ -82,12 +83,18 @@ class _DatabaseDebugScreenState extends ConsumerState<DatabaseDebugScreen> {
           const SizedBox(height: 20),
 
           // Action buttons
+          FlowPrimaryButton(
+            label: '+ Create Task with Form (Screen 09)',
+            icon: const Icon(Icons.add_task_rounded, color: Colors.white, size: 20),
+            onPressed: () => context.push('/task/new'),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: FlowPrimaryButton(
-                  label: '+ Add Task',
-                  icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                child: FlowSecondaryButton(
+                  label: '+ Quick Task',
+                  icon: const Icon(Icons.bolt_rounded, color: FlowColors.primaryLight, size: 18),
                   onPressed: () async {
                     final now = clock.now();
                     final startMin = (now.hour * 60 + now.minute) % 1400;
@@ -159,7 +166,13 @@ class _DatabaseDebugScreenState extends ConsumerState<DatabaseDebugScreen> {
           const SizedBox(height: 24),
 
           // Tasks List for Today
-          Text("TODAY'S PERSISTED TASKS ($todayKey)", style: FlowTypography.labelSmall.copyWith(color: FlowColors.primaryLight)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("TODAY'S PERSISTED TASKS ($todayKey)", style: FlowTypography.labelSmall.copyWith(color: FlowColors.primaryLight)),
+              const Text('Swipe right: Done | Left: Incomplete', style: TextStyle(color: FlowColors.textMuted, fontSize: 10)),
+            ],
+          ),
           const SizedBox(height: 8),
           tasksAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -175,7 +188,7 @@ class _DatabaseDebugScreenState extends ConsumerState<DatabaseDebugScreen> {
                         const SizedBox(height: 8),
                         const Text('No tasks in database for today.', style: FlowTypography.bodyLarge),
                         const SizedBox(height: 4),
-                        Text('Tap "+ Add Task" above to test persistence.', style: FlowTypography.bodyMedium.copyWith(color: FlowColors.textSecondary)),
+                        Text('Tap "+ Create Task" above to test persistence.', style: FlowTypography.bodyMedium.copyWith(color: FlowColors.textSecondary)),
                       ],
                     ),
                   ),
@@ -185,65 +198,21 @@ class _DatabaseDebugScreenState extends ConsumerState<DatabaseDebugScreen> {
               return Column(
                 children: tasks.map((task) {
                   final runtimeStatus = task.runtimeStatus(clock.now());
-                  final startTimeStr = '${(task.startMin ~/ 60).toString().padLeft(2, '0')}:${(task.startMin % 60).toString().padLeft(2, '0')}';
-                  final endTimeStr = '${(task.endMin ~/ 60).toString().padLeft(2, '0')}:${(task.endMin % 60).toString().padLeft(2, '0')}';
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: FlowCard(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(task.title, style: FlowTypography.titleMedium),
-                                    ),
-                                    FlowChip.status(
-                                      label: runtimeStatus.displayName,
-                                      color: task.isCompleted
-                                          ? FlowColors.success
-                                          : (runtimeStatus.displayName == 'Delayed' ? FlowColors.error : FlowColors.primaryLight),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '$startTimeStr - $endTimeStr (${task.durationMin}m) | Priority: ${task.priority == 2 ? 'High' : (task.priority == 1 ? 'Med' : 'Low')}',
-                                  style: FlowTypography.bodyMedium.copyWith(fontSize: 12, color: FlowColors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Toggle completion button
-                          IconButton(
-                            icon: Icon(
-                              task.isCompleted ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                              color: task.isCompleted ? FlowColors.success : FlowColors.textMuted,
-                            ),
-                            onPressed: () async {
-                              if (task.isCompleted) {
-                                await taskRepo.markIncomplete(task.id);
-                              } else {
-                                await taskRepo.markCompleted(task.id, DateTime.now().millisecondsSinceEpoch);
-                              }
-                            },
-                          ),
-                          // Delete button
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline_rounded, color: FlowColors.error, size: 20),
-                            onPressed: () async {
-                              await taskRepo.deleteTask(task.id);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
+                  return SwipeableTaskCard(
+                    key: ValueKey(task.id),
+                    task: task,
+                    runtimeStatus: runtimeStatus,
+                    onTap: () => context.push('/task/${task.id}/edit'),
+                    onComplete: (t) async {
+                      await taskRepo.markCompleted(t.id, clock.now().millisecondsSinceEpoch);
+                      if (context.mounted) {
+                        context.push('/completed/${t.id}');
+                      }
+                    },
+                    onIncomplete: (t) async {
+                      await taskRepo.markIncomplete(t.id);
+                    },
                   );
                 }).toList(),
               );

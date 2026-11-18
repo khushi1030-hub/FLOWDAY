@@ -10,6 +10,9 @@ import '../../features/onboarding/presentation/splash_screen.dart';
 import '../../features/onboarding/presentation/intro_screen.dart';
 import '../../features/onboarding/presentation/personalize_screen.dart';
 import '../../features/onboarding/presentation/permissions_screen.dart';
+import '../../features/tasks/presentation/edit_task_screen.dart';
+import '../../features/tasks/presentation/new_task_screen.dart';
+import '../../features/tasks/presentation/task_completed_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -152,12 +155,15 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/task/new',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const _SimpleRoutePlaceholder('New Task (09)'),
+      builder: (context, state) => const NewTaskScreen(),
     ),
     GoRoute(
       path: '/task/:id/edit',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => _SimpleRoutePlaceholder('Edit Task: ${state.pathParameters['id']} (10)'),
+      builder: (context, state) {
+        final id = state.pathParameters['id'] ?? '';
+        return EditTaskScreen(taskId: id);
+      },
     ),
     GoRoute(
       path: '/focus/:taskId',
@@ -172,7 +178,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/completed/:taskId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => _SimpleRoutePlaceholder('Completed: ${state.pathParameters['taskId']} (13)'),
+      builder: (context, state) {
+        final taskId = state.pathParameters['taskId'] ?? '';
+        return TaskCompletedScreen(taskId: taskId);
+      },
     ),
     GoRoute(
       path: '/delay/:taskId',
@@ -279,13 +288,19 @@ class _PlaceholderTabScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               FlowPrimaryButton(
+                label: '+ Create New Task (/task/new)',
+                icon: const Icon(Icons.add_task_rounded, color: Colors.white, size: 20),
+                onPressed: () => context.push('/task/new'),
+              ),
+              const SizedBox(height: 12),
+              FlowSecondaryButton(
                 label: 'Open Design Gallery (/dev/components)',
-                icon: const Icon(Icons.palette_rounded, color: Colors.white, size: 20),
+                icon: const Icon(Icons.palette_rounded, color: FlowColors.primaryLight, size: 20),
                 onPressed: () => context.push('/dev/components'),
               ),
               const SizedBox(height: 12),
               FlowSecondaryButton(
-                label: 'Open Database Test (/dev/database)',
+                label: 'Open Task & DB Manager (/dev/database)',
                 icon: const Icon(Icons.storage_rounded, color: FlowColors.primaryLight, size: 18),
                 onPressed: () => context.push('/dev/database'),
               ),

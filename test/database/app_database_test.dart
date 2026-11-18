@@ -47,7 +47,7 @@ void main() {
 
     test('Task CRUD operations work as expected', () async {
       final taskId = const Uuid().v4();
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final now = DateTime(2026, 11, 17, 10, 0).millisecondsSinceEpoch;
 
       final task = Task(
         id: taskId,
@@ -93,7 +93,7 @@ void main() {
 
     test('Transaction rollback on forced error leaves database unchanged', () async {
       final taskId = const Uuid().v4();
-      final now = DateTime.now().millisecondsSinceEpoch;
+      final now = DateTime(2026, 11, 17, 10, 0).millisecondsSinceEpoch;
 
       final task = Task(
         id: taskId,
@@ -142,7 +142,7 @@ void main() {
 
         final repo1 = SqliteTaskRepository(db1);
         const persistentId = 'persisted-task-123';
-        final now = DateTime.now().millisecondsSinceEpoch;
+        final now = DateTime(2026, 11, 17, 10, 0).millisecondsSinceEpoch;
         await repo1.insertTask(
           Task(
             id: persistentId,

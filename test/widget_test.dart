@@ -34,7 +34,7 @@ void main() {
     // Verify initial home screen content
     expect(find.text('Daily Command Center (Screen 07)'), findsOneWidget);
     expect(find.text('Open Design Gallery (/dev/components)'), findsOneWidget);
-    expect(find.text('Open Database Test (/dev/database)'), findsOneWidget);
+    expect(find.text('Open Task & DB Manager (/dev/database)'), findsOneWidget);
 
     // Switch to Schedule tab
     await tester.tap(find.byKey(const ValueKey('tab_schedule')));
