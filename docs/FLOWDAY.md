@@ -249,7 +249,7 @@ Tables (adjust column details sensibly, but keep these concepts):
 - **reschedule_log**(id, created_at, trigger_task_id, strategy, proposal_json, applied, applied_at) for history and undo
 - **scheduled_notifications**(id, task_id nullable, kind [start/end/nightly/snooze], fire_at, notification_id) so the app can reconcile and cancel precisely
 
-SharedPreferences keys (via a typed `SettingsRepository`): onboarding_completed, user_name, wake_time, sleep_time, default_break_min, notifications_enabled (+ per-kind toggles), alarm_sound, vibration_enabled, nightly_enabled, nightly_time (default 22:00), theme_mode, focus_default_sound, last_sync_window.
+SharedPreferences keys (via a typed `SettingsRepository`): onboarding_completed, user_name, wake_time, sleep_time, default_break_min, notifications_enabled (+ per-kind toggles), alarm_sound, vibration_enabled, nightly_enabled, nightly_time (default 21:30 per D6), theme_mode, focus_default_sound, last_sync_window.
 
 Provide DAOs/repositories with: CRUD, queries by day/range/status/series, overlap query, aggregates for insights, export/import (JSON with schema version), and `clearAll()`. Write migration tests.
 
