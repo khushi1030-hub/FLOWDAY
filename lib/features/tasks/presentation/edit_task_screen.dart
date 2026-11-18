@@ -330,7 +330,13 @@ class _EditTaskScreenState extends ConsumerState<EditTaskScreen> {
                       conflictCount: conflicts.length,
                       conflictingTaskTitle: conflicts.isNotEmpty ? conflicts.first.title : null,
                       onDateSelected: (val) => setState(() => _dateKey = val),
-                      onStartSelected: (val) => setState(() => _startMin = val),
+                      onStartSelected: (val) {
+                        setState(() {
+                          final duration = _endMin > _startMin ? _endMin - _startMin : 45;
+                          _startMin = val;
+                          _endMin = (_startMin + duration).clamp(5, 1440);
+                        });
+                      },
                       onEndSelected: (val) => setState(() => _endMin = val),
                       onDurationChanged: (val) => setState(() => _endMin = (_startMin + val).clamp(5, 1440)),
                     ),

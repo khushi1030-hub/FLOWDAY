@@ -6,6 +6,7 @@ import '../../core/theme/flow_typography.dart';
 import '../../core/widgets/flow_buttons.dart';
 import '../../features/dev/components_gallery_screen.dart';
 import '../../features/dev/database_debug_screen.dart';
+import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/splash_screen.dart';
 import '../../features/onboarding/presentation/intro_screen.dart';
 import '../../features/onboarding/presentation/personalize_screen.dart';
@@ -37,11 +38,7 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/home',
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: _PlaceholderTabScreen(
-                  title: 'Home',
-                  subtitle: 'Daily Command Center (Screen 07)',
-                  icon: Icons.home_rounded,
-                ),
+                child: HomeScreen(),
               ),
             ),
           ],

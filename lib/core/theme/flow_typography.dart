@@ -59,6 +59,13 @@ class FlowTypography {
     color: FlowColors.textSecondary,
   );
 
+  static const TextStyle bodySmall = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    height: 14 / 11,
+    color: FlowColors.textMuted,
+  );
+
   static const TextStyle labelLarge = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w700,

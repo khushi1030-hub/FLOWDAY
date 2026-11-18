@@ -34,6 +34,12 @@ final clockProvider = Provider<AppClock>((ref) {
   return const SystemClock();
 });
 
+/// Minute-tick stream provider emitting current DateTime updates derived from [clockProvider].
+final minuteTickProvider = StreamProvider<DateTime>((ref) {
+  final clock = ref.watch(clockProvider);
+  return clock.tickStream;
+});
+
 /// Task repository provider.
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final appDb = ref.watch(databaseProvider);

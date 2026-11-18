@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import '../../../../core/theme/flow_colors.dart';
+import '../../domain/entities/category.dart';
 
 class CategoryOption {
   const CategoryOption({
@@ -13,6 +14,16 @@ class CategoryOption {
   final String name;
   final Color color;
   final IconData icon;
+
+  Category toDomainCategory() {
+    return Category(
+      id: id,
+      name: name,
+      color: color.toARGB32(),
+      iconKey: name.toLowerCase(),
+      isDefault: true,
+    );
+  }
 }
 
 const List<CategoryOption> defaultCategoryOptions = [
