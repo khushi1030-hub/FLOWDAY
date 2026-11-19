@@ -99,3 +99,9 @@ final tasksForDayProvider = StreamProvider.family<List<Task>, String>((ref, date
   final repo = ref.watch(taskRepositoryProvider);
   return repo.watchTasksForDate(dateKey);
 });
+
+/// Reactive stream of all tasks across all dates.
+final allTasksProvider = StreamProvider<List<Task>>((ref) {
+  final repo = ref.watch(taskRepositoryProvider);
+  return repo.watchAllTasks();
+});

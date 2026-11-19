@@ -14,6 +14,8 @@ import '../../features/onboarding/presentation/permissions_screen.dart';
 import '../../features/tasks/presentation/edit_task_screen.dart';
 import '../../features/tasks/presentation/new_task_screen.dart';
 import '../../features/tasks/presentation/task_completed_screen.dart';
+import '../../features/schedule/presentation/schedule_screen.dart';
+import '../../features/schedule/presentation/calendar_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -51,11 +53,7 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/schedule',
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: _PlaceholderTabScreen(
-                  title: 'Schedule',
-                  subtitle: 'Daily Timeline & Agenda (Screen 08)',
-                  icon: Icons.calendar_today_rounded,
-                ),
+                child: ScheduleScreen(),
               ),
             ),
           ],
@@ -152,7 +150,16 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/task/new',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const NewTaskScreen(),
+      builder: (context, state) {
+        final date = state.uri.queryParameters['date'];
+        final start = int.tryParse(state.uri.queryParameters['start'] ?? '');
+        final end = int.tryParse(state.uri.queryParameters['end'] ?? '');
+        return NewTaskScreen(
+          initialDateKey: date,
+          initialStartMin: start,
+          initialEndMin: end,
+        );
+      },
     ),
     GoRoute(
       path: '/task/:id/edit',
@@ -203,7 +210,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/schedule/calendar',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const _SimpleRoutePlaceholder('Calendar Matrix (21)'),
+      builder: (context, state) => const CalendarScreen(),
     ),
     GoRoute(
       path: '/history',

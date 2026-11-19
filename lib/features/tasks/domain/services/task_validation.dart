@@ -1,4 +1,4 @@
-import '../../../../core/utils/time_utils.dart';
+import '../../../../core/time/day_window.dart';
 
 /// Result of task validation containing validity and a friendly user-facing error message.
 class TaskValidationResult {
@@ -36,24 +36,9 @@ class TaskValidator {
       return TaskValidationResult.error('End time must be after start time.');
     }
 
-    final bool isWithinWindow;
-    if (dayStartMin == dayEndMin) {
-      // 24-hour active window: entire day is valid
-      isWithinWindow = true;
-    } else if (dayStartMin < dayEndMin) {
-      // Standard daytime window: [dayStartMin, dayEndMin]
-      isWithinWindow = startMin >= dayStartMin && endMin <= dayEndMin;
-    } else {
-      // Overnight sleep rhythm (sleep past midnight: dayEndMin < dayStartMin)
-      // Waking window spans [dayStartMin, 1440) and [0, dayEndMin]
-      isWithinWindow = (startMin >= dayStartMin && endMin <= 1440) ||
-          (startMin >= 0 && endMin <= dayEndMin);
-    }
-
-    if (!isWithinWindow) {
-      final startStr = TimeUtils.formatMinutesToTime(dayStartMin);
-      final endStr = TimeUtils.formatMinutesToTime(dayEndMin);
-      return TaskValidationResult.error('Task must be scheduled within your waking hours ($startStr – $endStr).');
+    final window = DayWindow(startMin: dayStartMin, endMin: dayEndMin);
+    if (!window.isIntervalWithin(startMin, endMin)) {
+      return TaskValidationResult.error('Task must be scheduled within your waking hours (${window.formattedRange}).');
     }
     return TaskValidationResult.valid;
   }

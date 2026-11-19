@@ -36,6 +36,9 @@ class FakeTaskRepository implements TaskRepository {
   }
 
   @override
+  Stream<List<Task>> watchAllTasks() => _controller.stream;
+
+  @override
   Future<List<Task>> getAllTasks() async => List.unmodifiable(_tasks);
 
   @override
@@ -268,6 +271,40 @@ void main() {
       expect(find.text('Duration'), findsOneWidget);
       expect(find.text('60m'), findsWidgets);
       expect(find.text('Back to Home'), findsOneWidget);
+    });
+
+    testWidgets('NewTaskScreen: bad query parameters safely fall back to valid defaults', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      // Pass completely invalid parameters: bad date string, negative/out-of-bounds start & end
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clockProvider.overrideWithValue(fakeClock),
+            taskRepositoryProvider.overrideWithValue(taskRepo),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: const MaterialApp(
+            home: NewTaskScreen(
+              initialDateKey: 'invalid-date-format',
+              initialStartMin: 9999,
+              initialEndMin: -100,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Screen must render without crashing and preview must show today's date
+      expect(find.text('New task'), findsOneWidget);
+      expect(find.byType(TaskPreviewCard), findsOneWidget);
+      // Fallback date should be today's dateKey
+      expect(find.text('2026-11-19'), findsWidgets);
     });
   });
 }

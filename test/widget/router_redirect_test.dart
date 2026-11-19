@@ -21,6 +21,9 @@ class _FakeRedirectTaskRepository implements TaskRepository {
       Stream.value(<Task>[]);
 
   @override
+  Stream<List<Task>> watchAllTasks() => Stream.value(<Task>[]);
+
+  @override
   Future<List<Task>> getAllTasks() async => [];
 
   @override

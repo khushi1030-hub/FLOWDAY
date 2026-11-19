@@ -56,6 +56,14 @@ class SqliteTaskRepository implements TaskRepository {
   }
 
   @override
+  Stream<List<Task>> watchAllTasks() async* {
+    yield await getAllTasks();
+    await for (final _ in _changeController.stream) {
+      yield await getAllTasks();
+    }
+  }
+
+  @override
   Future<List<Task>> getAllTasks() async {
     final rows = await _db.query('tasks', orderBy: 'date_key ASC, start_min ASC');
     return rows.map(Task.fromMap).toList();

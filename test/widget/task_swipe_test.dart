@@ -27,6 +27,9 @@ class FakeTaskRepository implements TaskRepository {
       _controller.stream.map((list) => list.where((t) => t.dateKey == dateKey).toList());
 
   @override
+  Stream<List<Task>> watchAllTasks() => _controller.stream;
+
+  @override
   Future<List<Task>> getAllTasks() async => List.unmodifiable(_tasks);
 
   @override

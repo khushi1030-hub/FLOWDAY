@@ -8,6 +8,7 @@ import 'package:flow_day/core/providers/database_providers.dart';
 import 'package:flow_day/features/home/presentation/home_screen.dart';
 import 'package:flow_day/features/tasks/domain/entities/task.dart';
 import 'package:flow_day/features/tasks/domain/repositories/task_repository.dart';
+import 'package:flow_day/features/schedule/presentation/schedule_screen.dart';
 
 class _FakeTaskRepository implements TaskRepository {
   @override
@@ -19,6 +20,9 @@ class _FakeTaskRepository implements TaskRepository {
   @override
   Stream<List<Task>> watchTasksForDate(String dateKey) =>
       Stream.value(<Task>[]);
+
+  @override
+  Stream<List<Task>> watchAllTasks() => Stream.value(<Task>[]);
 
   @override
   Future<List<Task>> getAllTasks() async => [];
@@ -77,7 +81,7 @@ void main() {
     // Switch to Schedule tab
     await tester.tap(find.byKey(const ValueKey('tab_schedule')));
     await tester.pumpAndSettle();
-    expect(find.text('Daily Timeline & Agenda (Screen 08)'), findsOneWidget);
+    expect(find.byType(ScheduleScreen), findsOneWidget);
 
     // Switch to Insights tab
     await tester.tap(find.byKey(const ValueKey('tab_insights')));

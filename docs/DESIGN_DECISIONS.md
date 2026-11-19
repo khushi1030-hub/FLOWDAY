@@ -24,6 +24,7 @@ This file resolves conflicts between the UI, `FLOWDAY.md` and `SYSTEM_DESIGN.md`
 | D13 | Streak | Day counts if completion rate >= 1 task completed AND >= 50% of planned tasks. Computed from `task_events`. | Decided |
 | D14 | Avatar | Local image picker (image_picker). Falls back to initials. | Decided |
 | D15 | Empty fields & Sample data | The name field starts EMPTY with placeholder ("Your name"), is required, and is never pre-filled. The name "Khushi", the avatar photo, the email and all other sample mockup content must NOT appear as hardcoded data in the app. | Decided |
+| D16 | Free gap threshold (Screen 08) | Minimum duration for free-time gaps on the daily timeline is **15 minutes**. Intervals smaller than 15 minutes are treated as natural transition buffers and not rendered as "+ Free" insertion slots. | Decided |
 
 ---
 

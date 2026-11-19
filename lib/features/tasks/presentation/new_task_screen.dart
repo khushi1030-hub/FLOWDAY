@@ -52,13 +52,31 @@ class _NewTaskScreenState extends ConsumerState<NewTaskScreen> {
   void initState() {
     super.initState();
     final clock = ref.read(clockProvider);
-    _dateKey = widget.initialDateKey ?? clock.currentDateKey;
+    final rawDate = widget.initialDateKey;
+    final dateRegex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    if (rawDate != null && dateRegex.hasMatch(rawDate)) {
+      _dateKey = rawDate;
+    } else {
+      _dateKey = clock.currentDateKey;
+    }
 
     // Default: nearest upcoming 30m slot, 45m duration
     final currentMin = clock.currentMinutesSinceMidnight;
-    final defaultStart = widget.initialStartMin ?? (((currentMin ~/ 30) + 1) * 30).clamp(0, 1380);
-    _startMin = defaultStart;
-    _endMin = widget.initialEndMin ?? (_startMin + 45).clamp(5, 1440);
+    final defaultStart = (((currentMin ~/ 30) + 1) * 30).clamp(0, 1380);
+
+    final rawStart = widget.initialStartMin;
+    if (rawStart != null && rawStart >= 0 && rawStart < 1440) {
+      _startMin = rawStart;
+    } else {
+      _startMin = defaultStart;
+    }
+
+    final rawEnd = widget.initialEndMin;
+    if (rawEnd != null && rawEnd > _startMin && rawEnd <= 1440) {
+      _endMin = rawEnd;
+    } else {
+      _endMin = (_startMin + 45).clamp(5, 1440);
+    }
 
     _titleController.addListener(() => setState(() {}));
     _loadExistingTasks();

@@ -51,6 +51,26 @@ class FakeHomeTaskRepository implements TaskRepository {
   }
 
   @override
+  Stream<List<Task>> watchAllTasks() {
+    late StreamController<List<Task>> subController;
+    StreamSubscription? sub;
+    subController = StreamController<List<Task>>.broadcast(
+      onListen: () {
+        subController.add(List.of(_tasks));
+        sub = _controller.stream.listen((list) {
+          if (!subController.isClosed) {
+            subController.add(List.of(list));
+          }
+        });
+      },
+      onCancel: () {
+        sub?.cancel();
+      },
+    );
+    return subController.stream;
+  }
+
+  @override
   Future<List<Task>> getAllTasks() async => List.unmodifiable(_tasks);
 
   @override
@@ -109,6 +129,9 @@ class _FailingStreamRepo implements TaskRepository {
 
   @override
   Stream<List<Task>> watchTasksForDate(String dateKey) => _stream;
+
+  @override
+  Stream<List<Task>> watchAllTasks() => _stream;
 
   @override
   Future<Task?> getTaskById(String id) async => null;

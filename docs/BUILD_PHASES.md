@@ -20,7 +20,7 @@ Legend: **Deliverables** = what exists after the phase. **Exit checks** = what y
 **Deliverables:** architecture folders, dependencies, theme from design tokens, router with placeholder routes, reusable widgets (button, card, task tile, progress ring, input, dialog, bottom nav, app bar, empty state), a `/dev/components` gallery screen.
 **Exit checks**
 - `flutter pub get`, `flutter analyze` clean.
-- App runs on emulator; bottom nav switches between 5 tabs.
+- App runs on emulator; bottom nav switches between 4 tabs.
 - Theme visually matches the design (side-by-side with an image).
 
 ## Phase 2 — Database & state

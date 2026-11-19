@@ -5,6 +5,7 @@ abstract class TaskRepository {
   Future<Task?> getTaskById(String id);
   Future<List<Task>> getTasksForDate(String dateKey);
   Stream<List<Task>> watchTasksForDate(String dateKey);
+  Stream<List<Task>> watchAllTasks();
   Future<List<Task>> getAllTasks();
   Future<void> insertTask(Task task);
   Future<void> updateTask(Task task);
