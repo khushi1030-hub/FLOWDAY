@@ -71,13 +71,10 @@ class FlowToggleRow extends StatelessWidget {
               ],
             ),
           ),
-          Switch.adaptive(
+          Switch(
             value: value,
             onChanged: onChanged,
             activeTrackColor: FlowColors.primary,
-            activeThumbColor: Colors.white,
-            inactiveTrackColor: FlowColors.surfaceDark,
-            inactiveThumbColor: FlowColors.textMuted,
           ),
         ],
       ),

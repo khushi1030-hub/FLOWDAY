@@ -46,43 +46,47 @@ class ReminderOffsetPicker extends StatelessWidget {
         const SizedBox(height: 20),
 
         // FLEXIBLE TASK TOGGLE CARD
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161424),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF262244), width: 1),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          isFixed ? 'Fixed appointment 🔒' : 'Flexible task ↔',
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isFixed
-                          ? 'Engine will never move or split this task'
-                          : 'FlowDay may suggest moving it if plans change',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF8E8CA3)),
-                    ),
-                  ],
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onIsFixedChanged(!isFixed),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161424),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF262244), width: 1),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            isFixed ? 'Fixed appointment 🔒' : 'Flexible task ↔',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isFixed
+                            ? 'Engine will never move or split this task'
+                            : 'FlowDay may suggest moving it if plans change',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF8E8CA3)),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              Switch(
-                value: !isFixed,
-                activeThumbColor: FlowColors.primary,
-                onChanged: (val) => onIsFixedChanged(!val),
-              ),
-            ],
+                Switch(
+                  value: !isFixed,
+                  activeTrackColor: FlowColors.primary,
+                  onChanged: (val) => onIsFixedChanged(!val),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 20),
@@ -127,33 +131,37 @@ class ReminderOffsetPicker extends StatelessWidget {
               const SizedBox(height: 12),
 
               // End-of-task Alarm row
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: FlowColors.primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onAlarmEnabledChanged(!alarmEnabled),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: FlowColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.alarm_rounded, size: 16, color: FlowColors.primaryLight),
                     ),
-                    child: const Icon(Icons.alarm_rounded, size: 16, color: FlowColors.primaryLight),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('End-of-task alarm', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-                        SizedBox(height: 2),
-                        Text('Full-screen alert when time is up', style: TextStyle(fontSize: 11, color: Color(0xFF8E8CA3))),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('End-of-task alarm', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                          SizedBox(height: 2),
+                          Text('Full-screen alert when time is up', style: TextStyle(fontSize: 11, color: Color(0xFF8E8CA3))),
+                        ],
+                      ),
                     ),
-                  ),
-                  Switch(
-                    value: alarmEnabled,
-                    activeThumbColor: FlowColors.primary,
-                    onChanged: onAlarmEnabledChanged,
-                  ),
-                ],
+                    Switch(
+                      value: alarmEnabled,
+                      activeTrackColor: FlowColors.primary,
+                      onChanged: onAlarmEnabledChanged,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

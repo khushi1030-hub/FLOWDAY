@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flow_day/core/providers/database_providers.dart';
 import 'package:flow_day/core/time/app_clock.dart';
+import 'package:flow_day/core/theme/flow_colors.dart';
+import 'package:flow_day/core/theme/flow_theme.dart';
 import 'package:flow_day/features/tasks/domain/entities/task.dart';
 import 'package:flow_day/features/tasks/domain/repositories/task_repository.dart';
 import 'package:flow_day/features/tasks/presentation/edit_task_screen.dart';
@@ -325,6 +327,76 @@ void main() {
       expect(find.byType(TaskPreviewCard), findsOneWidget);
       // Fallback date should be today's dateKey
       expect(find.text('2026-11-19'), findsWidgets);
+    });
+
+    testWidgets('NewTaskScreen: Flexible Task and End-of-task Alarm toggles render and switch state smoothly', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clockProvider.overrideWithValue(fakeClock),
+            taskRepositoryProvider.overrideWithValue(taskRepo),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            theme: FlowTheme.darkTheme,
+            home: const NewTaskScreen(
+              initialDateKey: '2026-11-19',
+              initialStartMin: 600,
+              initialEndMin: 660,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Find both Switches
+      final switchFinder = find.byType(Switch);
+      expect(switchFinder, findsNWidgets(2));
+
+      // Initial states: Flexible Task is ON (!isFixed = true), End-of-task Alarm is ON (alarmEnabled = true)
+      Switch flexibleSwitch = tester.widget<Switch>(switchFinder.first);
+      Switch alarmSwitch = tester.widget<Switch>(switchFinder.last);
+      expect(flexibleSwitch.value, isTrue);
+      expect(alarmSwitch.value, isTrue);
+      expect(flexibleSwitch.activeTrackColor, equals(FlowColors.primary));
+      expect(alarmSwitch.activeTrackColor, equals(FlowColors.primary));
+
+      // Tap flexible task switch -> toggles to OFF (Fixed appointment)
+      await tester.tap(switchFinder.first);
+      await tester.pumpAndSettle();
+
+      flexibleSwitch = tester.widget<Switch>(switchFinder.first);
+      expect(flexibleSwitch.value, isFalse);
+      expect(find.text('Fixed appointment 🔒'), findsOneWidget);
+
+      // Tap row again via label -> toggles back to ON (Flexible task)
+      await tester.tap(find.text('Fixed appointment 🔒'));
+      await tester.pumpAndSettle();
+
+      flexibleSwitch = tester.widget<Switch>(switchFinder.first);
+      expect(flexibleSwitch.value, isTrue);
+      expect(find.text('Flexible task ↔'), findsOneWidget);
+
+      // Tap alarm switch -> toggles to OFF
+      await tester.tap(switchFinder.last);
+      await tester.pumpAndSettle();
+
+      alarmSwitch = tester.widget<Switch>(switchFinder.last);
+      expect(alarmSwitch.value, isFalse);
+
+      // Tap alarm row via label -> toggles back to ON
+      await tester.tap(find.text('End-of-task alarm'));
+      await tester.pumpAndSettle();
+
+      alarmSwitch = tester.widget<Switch>(switchFinder.last);
+      expect(alarmSwitch.value, isTrue);
     });
   });
 }
