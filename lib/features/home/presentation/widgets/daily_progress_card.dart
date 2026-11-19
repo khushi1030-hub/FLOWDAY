@@ -46,9 +46,9 @@ class DailyProgressCard extends StatelessWidget {
 
     // Dynamic subtitle
     final String subtitle;
-    if (state.totalCount == 0) {
+    if (state.activeTotal == 0) {
       subtitle = 'Tap + below to start scheduling your day.';
-    } else if (state.remainingCount == 0 && state.doneCount > 0) {
+    } else if (state.doneCount == state.activeTotal) {
       subtitle = "All tasks completed! You're flowing great today 🎉";
     } else if (state.trackStatus == TrackStatus.behind) {
       subtitle = "Take a breath. You can adjust and flow smoothly.";
@@ -119,8 +119,8 @@ class DailyProgressCard extends StatelessWidget {
 
                     // Completed headline
                     Text(
-                      state.totalCount > 0
-                          ? '${state.doneCount} of ${state.totalCount} tasks\ncompleted'
+                      state.activeTotal > 0
+                          ? '${state.doneCount} of ${state.activeTotal} tasks\ncompleted'
                           : 'No tasks scheduled',
                       style: FlowTypography.headlineMedium.copyWith(
                         fontSize: 17,

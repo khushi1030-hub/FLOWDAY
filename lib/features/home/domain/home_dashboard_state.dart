@@ -24,11 +24,13 @@ enum NowTaskType {
 ///
 /// Counting rules (per Decision 3 & UI_SPEC Screen 07):
 /// - total = all tasks scheduled for today
+/// - activeTotal = total - skipped (effective denominator for ring %, headline, and completion)
 /// - done = tasks with status == 'completed'
 /// - remaining = tasks that are not 'completed' and not 'skipped'
 ///   (includes 'pending', 'incomplete', 'postponed', and 'rescheduled')
 /// - skipped tasks count in total, but do NOT count in done or remaining
-/// - ring % = (done / total * 100).round(); returns 0 when total == 0
+/// - ring % = (done / activeTotal * 100).round(); returns 0 when activeTotal == 0
+/// - all-skipped tasks evaluates to TrackStatus.empty ('• No tasks')
 /// - focusMinutes = sum of planned durationMin for completed tasks (Phase 10 will connect to real focus sessions)
 class HomeDashboardState {
   const HomeDashboardState({
@@ -37,6 +39,7 @@ class HomeDashboardState {
     required this.greeting,
     required this.userName,
     required this.totalCount,
+    required this.activeTotal,
     required this.doneCount,
     required this.remainingCount,
     required this.focusMinutes,
@@ -53,6 +56,7 @@ class HomeDashboardState {
   final String greeting;
   final String userName;
   final int totalCount;
+  final int activeTotal;
   final int doneCount;
   final int remainingCount;
   final int focusMinutes;
@@ -84,15 +88,17 @@ class HomeDashboardState {
     required DateTime now,
     required String userName,
   }) {
-    // 1. Counting logic per Decision 3
+    // 1. Counting logic per Decision 3 and skipped-task counting rule
     final total = tasks.length;
+    final skipped = tasks.where((t) => t.status == 'skipped').length;
+    final activeTotal = total - skipped;
     final done = tasks.where((t) => t.isCompleted).length;
     // Remaining = not completed and not skipped
     final remaining = tasks.where((t) => !t.isCompleted && t.status != 'skipped').length;
 
-    // 2. Progress percentage
-    final double ratio = total > 0 ? (done / total) : 0.0;
-    final int percent = total > 0 ? (ratio * 100).round() : 0;
+    // 2. Progress percentage using activeTotal (total - skipped) as denominator
+    final double ratio = activeTotal > 0 ? (done / activeTotal) : 0.0;
+    final int percent = activeTotal > 0 ? (ratio * 100).round() : 0;
 
     // 3. Focus minutes: sum of planned duration of completed tasks
     // (Note per Decision 1: Phase 10 will connect this to real focus sessions)
@@ -102,11 +108,12 @@ class HomeDashboardState {
 
     // 4. "On track" badge derivation per Decision 4:
     // On track when no pending task is delayed. Otherwise show Behind.
-    // If all actionable tasks are done (remaining == 0 and done > 0), status is allDone.
+    // When total == 0 or all-skipped (activeTotal == 0), status is empty ('• No tasks').
+    // When activeTotal > 0 and done == activeTotal, status is allDone ('• Completed').
     final TrackStatus status;
-    if (total == 0) {
+    if (total == 0 || activeTotal == 0) {
       status = TrackStatus.empty;
-    } else if (remaining == 0 && done > 0) {
+    } else if (done == activeTotal) {
       status = TrackStatus.allDone;
     } else {
       final hasDelayed = tasks.any((t) =>
@@ -169,6 +176,7 @@ class HomeDashboardState {
       greeting: greeting,
       userName: userName.trim(),
       totalCount: total,
+      activeTotal: activeTotal,
       doneCount: done,
       remainingCount: remaining,
       focusMinutes: focusMins,

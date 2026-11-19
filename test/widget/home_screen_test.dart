@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flow_day/core/providers/database_providers.dart';
 import 'package:flow_day/core/time/app_clock.dart';
 import 'package:flow_day/features/home/presentation/home_screen.dart';
+import 'package:flow_day/features/home/presentation/providers/home_providers.dart';
 import 'package:flow_day/features/home/presentation/widgets/now_task_card.dart';
 import 'package:flow_day/features/tasks/domain/entities/task.dart';
 import 'package:flow_day/features/tasks/domain/repositories/task_repository.dart';
@@ -31,7 +32,22 @@ class FakeHomeTaskRepository implements TaskRepository {
 
   @override
   Stream<List<Task>> watchTasksForDate(String dateKey) {
-    return _controller.stream.map((list) => list.where((t) => t.dateKey == dateKey).toList());
+    late StreamController<List<Task>> subController;
+    StreamSubscription? sub;
+    subController = StreamController<List<Task>>.broadcast(
+      onListen: () {
+        subController.add(_tasks.where((t) => t.dateKey == dateKey).toList());
+        sub = _controller.stream.listen((list) {
+          if (!subController.isClosed) {
+            subController.add(list.where((t) => t.dateKey == dateKey).toList());
+          }
+        });
+      },
+      onCancel: () {
+        sub?.cancel();
+      },
+    );
+    return subController.stream;
   }
 
   @override
@@ -381,7 +397,7 @@ void main() {
       expect(find.text('0'), findsWidgets); // REMAINING: 0
     });
 
-    testWidgets('Live updates: advancing FakeClock refreshes NOW card elapsed/remaining time', (tester) async {
+    testWidgets('Live updates: advancing FakeClock refreshes greeting and NOW card elapsed/remaining time', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(() {
@@ -389,13 +405,16 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      // At 10:00 (600 min), task is 09:30 - 10:30 (570 - 630 min) -> 30 min in, 30 min left
+      // Set clock to 11:50 AM (morning)
+      fakeClock.setNow(DateTime(2026, 11, 19, 11, 50));
+
+      // Task is 11:30 - 12:30 (690 - 750 min) -> at 11:50 (710 min): 20 min in, 40 min left
       final task = Task(
         id: 'task-live',
         title: 'Writing Documentation',
         dateKey: today,
-        startMin: 570,
-        endMin: 630,
+        startMin: 690,
+        endMin: 750,
         createdAt: 1000,
         updatedAt: 1000,
       );
@@ -405,16 +424,83 @@ void main() {
       taskRepo.notifyAll();
       await tester.pumpAndSettle();
 
-      expect(find.text('30 min in'), findsOneWidget);
-      expect(find.text('30 min left'), findsOneWidget);
+      expect(find.text('Good Morning, Khushi! ☀️'), findsOneWidget);
+      expect(find.text('20 min in'), findsOneWidget);
+      expect(find.text('40 min left'), findsOneWidget);
 
-      // Advance clock by 15 minutes to 10:15 (615 min) -> 45 min in, 15 min left
+      // Advance clock by 15 minutes to 12:05 PM (afternoon)
       fakeClock.advance(const Duration(minutes: 15));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.pumpAndSettle();
 
-      expect(find.text('45 min in'), findsOneWidget);
-      expect(find.text('15 min left'), findsOneWidget);
+      // Greeting and NOW card both updated via tickStream!
+      expect(find.text('Good Afternoon, Khushi! 🌤️'), findsOneWidget);
+      expect(find.text('35 min in'), findsOneWidget);
+      expect(find.text('25 min left'), findsOneWidget);
+    });
+
+    testWidgets('Midnight rollover: advancing clock switches today date and schedule', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      // Set clock to 23:58 on Nov 19
+      fakeClock.setNow(DateTime(2026, 11, 19, 23, 58));
+
+      final taskToday = Task(
+        id: 'task-today',
+        title: 'Nightly Reflection',
+        dateKey: '2026-11-19',
+        startMin: 1400,
+        endMin: 1435,
+        createdAt: 1000,
+        updatedAt: 1000,
+      );
+      await taskRepo.insertTask(taskToday);
+
+      await tester.pumpWidget(createTestWidget());
+      taskRepo.notifyAll();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Thursday, November 19'), findsOneWidget);
+      expect(find.text('Nightly Reflection'), findsWidgets);
+
+      // Advance across midnight to 00:05 on Nov 20
+      fakeClock.setNow(DateTime(2026, 11, 20, 0, 5));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpAndSettle();
+
+      // Formatted date rolled over to Friday, Nov 20 and empty state for new day shows!
+      expect(find.text('Friday, November 20'), findsOneWidget);
+      expect(find.text('No tasks scheduled'), findsWidgets);
+    });
+
+    testWidgets('Loading state displays CircularProgressIndicator', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            clockProvider.overrideWithValue(fakeClock),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            homeDashboardProvider.overrideWithValue(const AsyncLoading()),
+          ],
+          child: const MaterialApp(
+            home: HomeScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('Error state displays friendly error card with Retry button', (tester) async {

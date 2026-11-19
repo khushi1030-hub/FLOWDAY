@@ -84,14 +84,15 @@ void main() {
         userName: 'Alex',
       );
 
-      // Total = 6
+      // Total = 6, ActiveTotal = 5 (6 - 1 skipped)
       expect(mixedState.totalCount, 6);
+      expect(mixedState.activeTotal, 5);
       // Done = 1
       expect(mixedState.doneCount, 1);
       // Remaining = 4 (pending, incomplete, postponed, rescheduled; skipped is NOT remaining)
       expect(mixedState.remainingCount, 4);
-      // Ring %: 1/6 = 16.67% -> 17%
-      expect(mixedState.progressPercent, 17);
+      // Ring %: 1/5 = 20%
+      expect(mixedState.progressPercent, 20);
       // Focus minutes: only completed tasks -> 60 min -> "1h"
       expect(mixedState.focusMinutes, 60);
       expect(mixedState.formattedFocusTime, '1h');
@@ -243,7 +244,7 @@ void main() {
       clock.dispose();
     });
 
-    test('Skipped tasks counting: 1 completed, 1 skipped -> remaining=0, TrackStatus.allDone', () {
+    test('Skipped tasks counting: 1 completed, 1 skipped -> remaining=0, activeTotal=1, 100%, TrackStatus.allDone', () {
       final tasksWithSkipped = [
         createTask(id: '1', title: 'Finished Task', startMin: 500, endMin: 560, status: 'completed'),
         createTask(id: '2', title: 'Skipped Task', startMin: 600, endMin: 660, status: 'skipped'),
@@ -256,13 +257,46 @@ void main() {
         userName: 'Alex',
       );
 
-      // Total = 2, Done = 1, Remaining = 0 (skipped does not count in remaining)
+      // Total = 2, ActiveTotal = 1 (2 - 1 skipped), Done = 1, Remaining = 0
       expect(state.totalCount, 2);
+      expect(state.activeTotal, 1);
       expect(state.doneCount, 1);
       expect(state.remainingCount, 0);
-      expect(state.progressPercent, 50);
-      // Since remaining is 0 and done > 0, track status is allDone!
+      expect(state.progressPercent, 100);
+      // Since all active tasks are completed, status is allDone ('• Completed')
       expect(state.trackStatus, TrackStatus.allDone);
+    });
+
+    test('All-skipped tasks: evaluated as TrackStatus.empty ("• No tasks") with 0% ring', () {
+      final allSkippedTasks = [
+        createTask(id: '1', title: 'Skipped 1', startMin: 500, endMin: 560, status: 'skipped'),
+        createTask(id: '2', title: 'Skipped 2', startMin: 600, endMin: 660, status: 'skipped'),
+      ];
+
+      final state = HomeDashboardState.compute(
+        dateKey: today,
+        tasks: allSkippedTasks,
+        now: DateTime(2026, 11, 19, 12, 0),
+        userName: 'Alex',
+      );
+
+      expect(state.totalCount, 2);
+      expect(state.activeTotal, 0);
+      expect(state.doneCount, 0);
+      expect(state.remainingCount, 0);
+      expect(state.progressPercent, 0);
+      // All-skipped rule: evaluates to TrackStatus.empty ("• No tasks")
+      expect(state.trackStatus, TrackStatus.empty);
+    });
+
+    test('SystemClock.tickStream produces stream and cancels cleanly when unlistened', () async {
+      const clock = SystemClock();
+      final stream = clock.tickStream;
+      final sub = stream.listen((_) {});
+
+      // Cancel immediately to verify onCancel cleanly tears down timer without error
+      await sub.cancel();
+      expect(true, isTrue);
     });
 
     test('Midnight rollover: date and greeting roll over deterministically', () {
