@@ -47,6 +47,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
       final settings = await settingsRepo.getSettings();
 
       if (!mounted) return;
+
+      // If a notification or intent already navigated to another screen (e.g. /alarm/:id), don't overwrite it!
+      final currentLoc = GoRouter.of(context).state.matchedLocation;
+      if (currentLoc != '/splash') return;
+
       if (settings.onboardingDone) {
         context.go('/home');
       } else {

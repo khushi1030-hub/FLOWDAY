@@ -5,6 +5,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flow_day/app/app.dart';
 import 'package:flow_day/core/providers/database_providers.dart';
+import 'package:flow_day/core/providers/notification_providers.dart';
+import 'unit/notification_scheduler_test.dart';
 import 'package:flow_day/features/home/presentation/home_screen.dart';
 import 'package:flow_day/features/tasks/domain/entities/task.dart';
 import 'package:flow_day/features/tasks/domain/repositories/task_repository.dart';
@@ -59,6 +61,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           taskRepositoryProvider.overrideWithValue(_FakeTaskRepository()),
+          notificationGatewayProvider.overrideWithValue(FakeNotificationGateway()),
         ],
         child: const FlowDayApp(),
       ),
@@ -91,6 +94,6 @@ void main() {
     // Switch to Settings tab
     await tester.tap(find.byKey(const ValueKey('tab_settings')));
     await tester.pumpAndSettle();
-    expect(find.text('Preferences & Schedule (Screen 24)'), findsOneWidget);
+    expect(find.text('NOTIFICATIONS & ALARMS'), findsOneWidget);
   });
 }

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:permission_handler/permission_handler.dart';
 import '../../../core/providers/database_providers.dart';
+import '../../../core/providers/notification_providers.dart';
 import '../../../core/theme/flow_colors.dart';
 import '../../../core/widgets/flow_buttons.dart';
 
@@ -30,7 +30,8 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
   Future<void> _requestPermission() async {
     setState(() => _isLoading = true);
     try {
-      await Permission.notification.request();
+      final gateway = ref.read(notificationGatewayProvider);
+      await gateway.requestNotificationPermission();
     } catch (_) {
       // Permission request failure or cancellation must not crash the flow
     } finally {

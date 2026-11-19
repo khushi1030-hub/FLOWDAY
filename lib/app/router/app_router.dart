@@ -16,6 +16,9 @@ import '../../features/tasks/presentation/new_task_screen.dart';
 import '../../features/tasks/presentation/task_completed_screen.dart';
 import '../../features/schedule/presentation/schedule_screen.dart';
 import '../../features/schedule/presentation/calendar_screen.dart';
+import '../../features/alarms/presentation/alarm_screen.dart';
+import '../../features/alarms/presentation/delay_placeholder_screen.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -84,11 +87,7 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/settings',
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: _PlaceholderTabScreen(
-                  title: 'Settings',
-                  subtitle: 'Preferences & Schedule (Screen 24)',
-                  icon: Icons.settings_rounded,
-                ),
+                child: SettingsScreen(),
               ),
             ),
           ],
@@ -177,7 +176,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/alarm/:taskId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => _SimpleRoutePlaceholder('Alarm: ${state.pathParameters['taskId']} (12)'),
+      builder: (context, state) {
+        final taskId = state.pathParameters['taskId'] ?? '';
+        return AlarmScreen(taskId: taskId);
+      },
     ),
     GoRoute(
       path: '/completed/:taskId',
@@ -190,7 +192,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/delay/:taskId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => _SimpleRoutePlaceholder('Delay Adjust: ${state.pathParameters['taskId']} (14)'),
+      builder: (context, state) {
+        final taskId = state.pathParameters['taskId'] ?? '';
+        return DelayPlaceholderScreen(taskId: taskId);
+      },
     ),
     GoRoute(
       path: '/reschedule',
