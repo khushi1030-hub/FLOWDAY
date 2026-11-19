@@ -18,7 +18,9 @@ import '../../features/schedule/presentation/schedule_screen.dart';
 import '../../features/schedule/presentation/calendar_screen.dart';
 import '../../features/alarms/presentation/alarm_screen.dart';
 import '../../features/delay/presentation/unfinished_adjust_screen.dart';
+import '../../features/rescheduling/presentation/reschedule_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/tasks/domain/entities/task.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -200,7 +202,33 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/reschedule',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const _SimpleRoutePlaceholder('Smart Rescheduling (16/19)'),
+      builder: (context, state) {
+        final queryTaskId = state.uri.queryParameters['taskId'];
+        final queryExtraMin = int.tryParse(state.uri.queryParameters['extraMinutes'] ?? '');
+        final queryDateKey = state.uri.queryParameters['dateKey'];
+
+        Task? newConflictingTask;
+        String? taskId = queryTaskId;
+        int extraMinutes = queryExtraMin ?? 30;
+        String? dateKey = queryDateKey;
+
+        if (state.extra is Task) {
+          newConflictingTask = state.extra as Task;
+        } else if (state.extra is Map<String, dynamic>) {
+          final map = state.extra as Map<String, dynamic>;
+          newConflictingTask = map['newConflictingTask'] as Task?;
+          taskId = map['taskId'] as String? ?? taskId;
+          extraMinutes = map['extraMinutes'] as int? ?? extraMinutes;
+          dateKey = map['dateKey'] as String? ?? dateKey;
+        }
+
+        return RescheduleScreen(
+          taskId: taskId,
+          extraMinutes: extraMinutes,
+          newConflictingTask: newConflictingTask,
+          dateKey: dateKey,
+        );
+      },
     ),
     GoRoute(
       path: '/review/:dateKey',

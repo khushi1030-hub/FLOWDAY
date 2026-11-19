@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/providers/database_providers.dart';
@@ -214,6 +215,33 @@ class _NewTaskScreenState extends ConsumerState<NewTaskScreen> {
               ),
               const SizedBox(height: 20),
               FlowPrimaryButton(
+                label: 'Smart Reschedule (Compare Plans)',
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final clock = ref.read(clockProvider);
+                  final draftTask = Task(
+                    id: const Uuid().v4(),
+                    title: _titleController.text.trim().isEmpty ? 'New Task' : _titleController.text.trim(),
+                    categoryId: _categoryId,
+                    dateKey: _dateKey,
+                    startMin: _startMin,
+                    endMin: _endMin,
+                    isFixed: _isFixed,
+                    priority: _priority,
+                    reminderOffsetMin: _reminderOffsetMin,
+                    notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+                    status: 'pending',
+                    createdAt: clock.now().millisecondsSinceEpoch,
+                    updatedAt: clock.now().millisecondsSinceEpoch,
+                  );
+                  final applied = await context.push<bool>('/reschedule', extra: draftTask);
+                  if (applied == true && mounted) {
+                    Navigator.of(context).maybePop();
+                  }
+                },
+              ),
+              const SizedBox(height: 10),
+              FlowSecondaryButton(
                 label: 'Adjust Times (Next Slot)',
                 onPressed: () {
                   Navigator.of(ctx).pop();

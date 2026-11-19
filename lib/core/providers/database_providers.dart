@@ -77,7 +77,8 @@ final dayConfirmationRepositoryProvider = Provider<DayConfirmationRepository>((r
 /// Reschedule repository provider.
 final rescheduleRepositoryProvider = Provider<RescheduleRepository>((ref) {
   final appDb = ref.watch(databaseProvider);
-  return SqliteRescheduleRepository(appDb.db);
+  final clock = ref.watch(clockProvider);
+  return SqliteRescheduleRepository(appDb.db, clock);
 });
 
 /// Settings repository provider.

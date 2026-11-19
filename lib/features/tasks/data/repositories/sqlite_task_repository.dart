@@ -22,6 +22,10 @@ class SqliteTaskRepository implements TaskRepository {
     }
   }
 
+  /// Public hook to notify task streams on external schedule updates (e.g. rescheduling batches).
+  void notifyDate(String dateKey) => _notifyDate(dateKey);
+  void notifyAll() => _notifyDate('ALL');
+
   @override
   Future<Task?> getTaskById(String id) async {
     final rows = await _db.query(
@@ -96,9 +100,11 @@ class SqliteTaskRepository implements TaskRepository {
   Future<void> updateTask(Task task) async {
     final nowMs = _clock.now().millisecondsSinceEpoch;
     await _db.transaction((txn) async {
+      final taskMap = Map<String, dynamic>.from(task.toMap());
+      taskMap['updated_at'] = nowMs;
       await txn.update(
         'tasks',
-        task.toMap(),
+        taskMap,
         where: 'id = ?',
         whereArgs: [task.id],
       );

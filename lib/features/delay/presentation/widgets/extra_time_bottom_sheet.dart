@@ -480,7 +480,9 @@ class _ExtraTimeBottomSheetState extends ConsumerState<ExtraTimeBottomSheet> {
                         onPressed: () {
                           if (calculation.hasFixedCollision) {
                             Navigator.of(context).pop();
-                            context.push('/reschedule');
+                            context.push(
+                              '/reschedule?taskId=${widget.task.id}&extraMinutes=$_selectedMinutes&dateKey=${widget.task.dateKey}',
+                            );
                           } else {
                             _applyChanges(calculation);
                           }
