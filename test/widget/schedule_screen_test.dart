@@ -288,6 +288,19 @@ void main() {
       expect(find.text("Tomorrow's Schedule · Unconfirmed (Review at 09:30 PM)"), findsOneWidget);
     });
 
+    testWidgets('Tomorrow banner reads nightly reminder time dynamically from settings', (tester) async {
+      await prefs.setInt('nightly_review_min', 1320); // 22:00 -> 10:00 PM
+      await tester.pumpWidget(createTestApp());
+      await tester.pumpAndSettle();
+
+      // Tap Tomorrow tab
+      await tester.tap(find.text('Tomorrow'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TomorrowBanner), findsOneWidget);
+      expect(find.text("Tomorrow's Schedule · Unconfirmed (Review at 10:00 PM)"), findsOneWidget);
+    });
+
     testWidgets('Filter chips filter visible tasks correctly', (tester) async {
       await repo.insertTask(Task(
         id: 't-comp',
