@@ -220,6 +220,110 @@ class SqliteTaskRepository implements TaskRepository {
   }
 
   @override
+  Future<void> applyDelayShift({
+    required Task extendedTask,
+    required List<Task> shiftedTasks,
+  }) async {
+    final nowMs = _clock.now().millisecondsSinceEpoch;
+    await _db.transaction((txn) async {
+      // 1. Update extended task
+      final updatedExtended = extendedTask.copyWith(
+        wasRescheduled: true,
+        updatedAt: nowMs,
+      );
+      await txn.update(
+        'tasks',
+        updatedExtended.toMap(),
+        where: 'id = ?',
+        whereArgs: [updatedExtended.id],
+      );
+      final event1 = TaskEvent(
+        taskId: updatedExtended.id,
+        taskTitle: updatedExtended.title,
+        dateKey: updatedExtended.dateKey,
+        eventType: 'rescheduled',
+        plannedMinutes: updatedExtended.durationMin,
+        actualMinutes: 0,
+        occurredAt: nowMs,
+      );
+      await txn.insert('task_events', event1.toMap());
+
+      // 2. Update all shifted downstream tasks
+      for (final shifted in shiftedTasks) {
+        final updatedShifted = shifted.copyWith(
+          wasRescheduled: true,
+          updatedAt: nowMs,
+        );
+        await txn.update(
+          'tasks',
+          updatedShifted.toMap(),
+          where: 'id = ?',
+          whereArgs: [updatedShifted.id],
+        );
+        final event = TaskEvent(
+          taskId: updatedShifted.id,
+          taskTitle: updatedShifted.title,
+          dateKey: updatedShifted.dateKey,
+          eventType: 'rescheduled',
+          plannedMinutes: updatedShifted.durationMin,
+          actualMinutes: 0,
+          occurredAt: nowMs,
+        );
+        await txn.insert('task_events', event.toMap());
+      }
+    });
+
+    _notifyDate(extendedTask.dateKey);
+  }
+
+  @override
+  Future<void> rescheduleTask(
+    Task task, {
+    required String newDateKey,
+    required int newStartMin,
+    required int newEndMin,
+    String? carriedFromDateKey,
+  }) async {
+    final nowMs = _clock.now().millisecondsSinceEpoch;
+    final isDifferentDate = task.dateKey != newDateKey;
+
+    await _db.transaction((txn) async {
+      final updated = task.copyWith(
+        dateKey: newDateKey,
+        startMin: newStartMin,
+        endMin: newEndMin,
+        status: 'rescheduled',
+        wasRescheduled: true,
+        carriedFromDateKey: carriedFromDateKey,
+        updatedAt: nowMs,
+      );
+
+      await txn.update(
+        'tasks',
+        updated.toMap(),
+        where: 'id = ?',
+        whereArgs: [updated.id],
+      );
+
+      final event = TaskEvent(
+        taskId: updated.id,
+        taskTitle: updated.title,
+        dateKey: newDateKey,
+        eventType: isDifferentDate ? 'postponed' : 'rescheduled',
+        plannedMinutes: updated.durationMin,
+        actualMinutes: 0,
+        occurredAt: nowMs,
+      );
+      await txn.insert('task_events', event.toMap());
+    });
+
+    _notifyDate(task.dateKey);
+    if (isDifferentDate) {
+      _notifyDate(newDateKey);
+    }
+  }
+
+  @override
   Future<void> deleteAll() async {
     await _db.delete('tasks');
     _notifyDate('ALL');

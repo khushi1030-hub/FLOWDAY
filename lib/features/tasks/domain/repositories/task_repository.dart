@@ -12,5 +12,7 @@ abstract class TaskRepository {
   Future<void> deleteTask(String id);
   Future<void> markCompleted(String id, int completedAt);
   Future<void> markIncomplete(String id);
+  Future<void> applyDelayShift({required Task extendedTask, required List<Task> shiftedTasks});
+  Future<void> rescheduleTask(Task task, {required String newDateKey, required int newStartMin, required int newEndMin, String? carriedFromDateKey});
   Future<void> deleteAll();
 }

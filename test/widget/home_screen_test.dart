@@ -118,6 +118,26 @@ class FakeHomeTaskRepository implements TaskRepository {
     _controller.add(List.of(_tasks));
   }
 
+  @override
+  Future<void> applyDelayShift({required Task extendedTask, required List<Task> shiftedTasks}) async {
+    await updateTask(extendedTask);
+    for (final t in shiftedTasks) {
+      await updateTask(t);
+    }
+  }
+
+  @override
+  Future<void> rescheduleTask(Task task, {required String newDateKey, required int newStartMin, required int newEndMin, String? carriedFromDateKey}) async {
+    await updateTask(task.copyWith(
+      dateKey: newDateKey,
+      startMin: newStartMin,
+      endMin: newEndMin,
+      carriedFromDateKey: carriedFromDateKey,
+      wasRescheduled: true,
+      status: 'rescheduled',
+    ));
+  }
+
   void notifyAll() {
     _controller.add(List.of(_tasks));
   }
@@ -156,6 +176,12 @@ class _FailingStreamRepo implements TaskRepository {
 
   @override
   Future<void> markIncomplete(String id) async {}
+
+  @override
+  Future<void> applyDelayShift({required Task extendedTask, required List<Task> shiftedTasks}) async {}
+
+  @override
+  Future<void> rescheduleTask(Task task, {required String newDateKey, required int newStartMin, required int newEndMin, String? carriedFromDateKey}) async {}
 
   @override
   Future<void> deleteAll() async {}

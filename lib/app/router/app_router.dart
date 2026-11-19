@@ -17,7 +17,7 @@ import '../../features/tasks/presentation/task_completed_screen.dart';
 import '../../features/schedule/presentation/schedule_screen.dart';
 import '../../features/schedule/presentation/calendar_screen.dart';
 import '../../features/alarms/presentation/alarm_screen.dart';
-import '../../features/alarms/presentation/delay_placeholder_screen.dart';
+import '../../features/delay/presentation/unfinished_adjust_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -194,7 +194,7 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
         final taskId = state.pathParameters['taskId'] ?? '';
-        return DelayPlaceholderScreen(taskId: taskId);
+        return UnfinishedAdjustScreen(taskId: taskId);
       },
     ),
     GoRoute(

@@ -45,6 +45,12 @@ class _FakeTaskRepository implements TaskRepository {
   Future<void> markIncomplete(String id) async {}
 
   @override
+  Future<void> applyDelayShift({required Task extendedTask, required List<Task> shiftedTasks}) async {}
+
+  @override
+  Future<void> rescheduleTask(Task task, {required String newDateKey, required int newStartMin, required int newEndMin, String? carriedFromDateKey}) async {}
+
+  @override
   Future<void> deleteAll() async {}
 }
 

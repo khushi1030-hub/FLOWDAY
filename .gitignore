@@ -48,5 +48,6 @@ app.*.map.json
 .widget_preview/
 
 # Kotlin daemon / cache
+*.apk
 .kotlin/
 android/.kotlin/

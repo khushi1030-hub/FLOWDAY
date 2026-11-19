@@ -38,13 +38,17 @@ class HomeScreen extends ConsumerWidget {
     await taskRepo.markIncomplete(task.id);
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Adjust task: Smart rescheduling coming in Phase 8'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      try {
+        context.push('/delay/${task.id}');
+      } catch (_) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Adjust task: Smart rescheduling coming in Phase 8'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 

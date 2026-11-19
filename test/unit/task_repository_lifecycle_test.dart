@@ -289,5 +289,85 @@ void main() {
       );
       expect(events.length, 1);
     });
+
+    test('applyDelayShift updates extended and shifted tasks in one transaction and logs rescheduled events', () async {
+      final taskA = Task(
+        id: 'shift-a',
+        title: 'Task A',
+        dateKey: '2026-11-19',
+        startMin: 600,
+        endMin: 660,
+        createdAt: fixedTime.millisecondsSinceEpoch,
+        updatedAt: fixedTime.millisecondsSinceEpoch,
+      );
+      final taskB = Task(
+        id: 'shift-b',
+        title: 'Task B',
+        dateKey: '2026-11-19',
+        startMin: 660,
+        endMin: 720,
+        createdAt: fixedTime.millisecondsSinceEpoch,
+        updatedAt: fixedTime.millisecondsSinceEpoch,
+      );
+
+      await taskRepo.insertTask(taskA);
+      await taskRepo.insertTask(taskB);
+
+      // Extend Task A to 690 (+30 min) and shift Task B to 690-750
+      final extendedA = taskA.copyWith(endMin: 690);
+      final shiftedB = taskB.copyWith(startMin: 690, endMin: 750);
+
+      await taskRepo.applyDelayShift(
+        extendedTask: extendedA,
+        shiftedTasks: [shiftedB],
+      );
+
+      final dbA = await taskRepo.getTaskById('shift-a');
+      final dbB = await taskRepo.getTaskById('shift-b');
+
+      expect(dbA!.endMin, 690);
+      expect(dbA.wasRescheduled, isTrue);
+      expect(dbB!.startMin, 690);
+      expect(dbB.endMin, 750);
+      expect(dbB.wasRescheduled, isTrue);
+
+      final eventsA = await db.query('task_events', where: 'task_id = ? AND event_type = ?', whereArgs: ['shift-a', 'rescheduled']);
+      final eventsB = await db.query('task_events', where: 'task_id = ? AND event_type = ?', whereArgs: ['shift-b', 'rescheduled']);
+      expect(eventsA.length, 1);
+      expect(eventsB.length, 1);
+    });
+
+    test('rescheduleTask moves task to a new slot or new day and logs event', () async {
+      final task = Task(
+        id: 'reschedule-1',
+        title: 'Move Me',
+        dateKey: '2026-11-19',
+        startMin: 600,
+        endMin: 660,
+        createdAt: fixedTime.millisecondsSinceEpoch,
+        updatedAt: fixedTime.millisecondsSinceEpoch,
+      );
+      await taskRepo.insertTask(task);
+
+      // Move to tomorrow at 09:00 AM (540 to 600)
+      await taskRepo.rescheduleTask(
+        task,
+        newDateKey: '2026-11-20',
+        newStartMin: 540,
+        newEndMin: 600,
+        carriedFromDateKey: '2026-11-19',
+      );
+
+      final moved = await taskRepo.getTaskById('reschedule-1');
+      expect(moved!.dateKey, '2026-11-20');
+      expect(moved.startMin, 540);
+      expect(moved.endMin, 600);
+      expect(moved.status, 'rescheduled');
+      expect(moved.wasRescheduled, isTrue);
+      expect(moved.carriedFromDateKey, '2026-11-19');
+
+      final events = await db.query('task_events', where: 'task_id = ? AND event_type = ?', whereArgs: ['reschedule-1', 'postponed']);
+      expect(events.length, 1);
+    });
   });
 }
